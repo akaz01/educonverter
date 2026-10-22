@@ -12,7 +12,7 @@
 <p align="center">
   <a href="https://github.com/akaz01/educonverter/releases/latest/download/EDU_Converter_win.zip"><b>⬇ Windows용 다운로드</b></a>
   ·
-  <a href="https://educonverter.vercel.app">소개 사이트</a>
+  <a href="https://edu-converter.vercel.app">소개 사이트</a>
   ·
   <a href="https://github.com/akaz01/educonverter/releases">모든 버전</a>
 </p>
