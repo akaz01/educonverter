@@ -60,13 +60,18 @@
   .hero p.lead { font-size: 19px; color: var(--sub); margin: 0 0 26px; }
   .cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
   .meta { font-size: 14px; color: var(--sub); margin-top: 14px; }
-  .news { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; max-width: 100%; margin: 0 0 18px;
-    padding: 7px 14px 7px 7px; border-radius: 22px; background: var(--card); border: 1px solid var(--line);
-    box-shadow: var(--shadow); color: var(--ink); text-decoration: none; font-size: 15px; }
+  /* 새 소식: [배지] 글 → 를 한 줄로. 글이 길면 배지·화살표는 제자리에 두고 글만 줄바꿈 */
+  .news { display: inline-grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: 12px;
+    max-width: 100%; margin: 0 0 20px; padding: 8px 16px 8px 8px; border-radius: 18px;
+    background: var(--card); border: 1px solid var(--line); box-shadow: var(--shadow);
+    color: var(--ink); text-decoration: none; font-size: 15px; line-height: 1.45; }
   .news[hidden] { display: none; }
+  .news-tag { background: var(--accent); color: #fff; border-radius: 12px; padding: 4px 10px;
+    font-weight: 700; font-size: 13px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .news-text { word-break: keep-all; }
+  .news-go { color: var(--accent); font-weight: 700; transition: transform .15s ease; }
   .news:hover, .news:focus-visible { border-color: var(--accent); }
-  .news-tag { background: var(--accent); color: #fff; border-radius: 999px; padding: 3px 10px; font-weight: 700; font-size: 13px; }
-  .news-date { color: var(--sub); font-size: 13px; }
+  .news:hover .news-go, .news:focus-visible .news-go { transform: translateX(3px); }
   .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 22px 0 0; max-width: 480px; }
   .stats div { background: var(--card); border-radius: 18px; padding: 12px 14px; box-shadow: var(--shadow); }
   .stats dt { font-size: 13px; color: var(--sub); }
@@ -143,7 +148,7 @@
       <a class="news" id="news" href="#update" hidden>
         <span class="news-tag" id="news-version"></span>
         <span class="news-text" id="news-text"></span>
-        <span class="news-date" id="news-date"></span>
+        <span class="news-go" aria-hidden="true">→</span>
       </a>
       <h1>끌다가 <em>Q</em> 한 번,<br>놓으면 <em>변환 끝.</em></h1>
       <p class="lead">한글·PDF·Word·Excel·PPT·이미지 변환부터 화질 지키는 용량 줄이기, PDF 쪽 편집까지.
@@ -152,7 +157,7 @@
         <a class="btn" href="/download"><svg><use href="#win"/></svg>Windows용 다운로드</a>
         <a class="btn ghost" href="#how">어떻게 써요?</a>
       </div>
-      <div class="meta"><span id="meta-version">버전 0.3.2</span> · Windows 10/11 · 관리자 권한 없이 설치</div>
+      <div class="meta"><span id="meta-version">버전 0.3.2</span><span id="meta-date"></span> · Windows 10/11 · 관리자 권한 없이 설치</div>
       <dl class="stats" aria-live="polite">
         <div><dt>누적 다운로드</dt><dd id="st-release">–</dd></div>
         <div><dt>다운로드 버튼 클릭</dt><dd id="st-download">–</dd></div>
@@ -302,9 +307,9 @@
     set("latest-name", `EDU_Converter ${l.version}`);
     set("meta-version", `버전 ${l.version}`);
     set("news-version", `NEW ${l.version}`);
-    set("news-text", l.summary || "새 버전이 나왔어요. 업데이트 방법 보기 →");
+    set("news-text", l.summary || "새 버전이 나왔어요. 업데이트 방법 보기");
     const d = /^(\d{4})-(\d{2})-(\d{2})$/.exec(l.date || "");
-    set("news-date", d ? `${Number(d[2])}월 ${Number(d[3])}일` : "");
+    set("meta-date", d ? ` · ${Number(d[2])}월 ${Number(d[3])}일 업데이트` : "");
     document.getElementById("news").hidden = false;
   }).catch(() => {});
 </script>
