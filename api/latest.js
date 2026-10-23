@@ -12,6 +12,13 @@ function summaryOf(body) {
   return m ? m[1].replace(/[*`]/g, "").trim().slice(0, MAX_SUMMARY) : "";
 }
 
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
+function koreanDate(iso) {
+  const t = Date.parse(String(iso || ""));
+  return Number.isNaN(t) ? "" : new Date(t + KST_OFFSET_MS).toISOString().slice(0, 10);
+}
+
 export default async function handler(req, res) {
   try {
     const gh = await fetch(LATEST, {
@@ -23,7 +30,7 @@ export default async function handler(req, res) {
     res.setHeader("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
     res.status(200).json({
       version: String(tag).replace(/^v/, ""),
-      date: String(published || "").slice(0, 10), // "2026-10-24"
+      date: koreanDate(published), // "2026-10-24" (한국 시간: GitHub는 UTC라 새벽에 올리면 하루 전 날짜가 된다)
       summary: summaryOf(body),
     });
   } catch (err) {
