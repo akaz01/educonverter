@@ -54,6 +54,7 @@
 - Windows 10/11
 - 한글 관련 변환: 한컴오피스 한글 / Word·Excel·PPT 관련 변환: MS Office
 - 열어 둔 한글·Office 창은 건드리지 않고, 직접 놓은 파일만 엽니다.
+- 새 버전 알림: 하루 한 번 최신 버전 번호만 확인합니다(이 사이트의 `/api/latest`만). 개인정보는 보내지 않고, 설치는 직접 하실 때만 됩니다. 설정 > 시작에서 끌 수 있습니다.
 
 ## 만든 사람
 이수훈 · akazhoon@gmail.com — 불편한 점이나 바라는 기능은 [Issues](https://github.com/akaz01/educonverter/issues)나 메일로 알려 주세요.

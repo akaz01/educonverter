@@ -243,10 +243,24 @@
     </div>
   </section>
 
+  <section id="update">
+    <h2>새 버전으로 업데이트하는 법</h2>
+    <p class="sub">앱에서 "새 버전" 알림을 누르셨다면 여기예요. 지울 필요 없이 덮어쓰면 끝, 설정도 그대로예요.</p>
+    <div class="card">
+      <ol>
+        <li>바로 아래 <b>Windows용 다운로드</b> 버튼을 눌러 새 zip을 받아요. (가입·로그인 필요 없어요)</li>
+        <li>받은 <b>zip 파일의 압축을 풀어요.</b> (파일 우클릭 → 압축 풀기)</li>
+        <li>폴더 안의 <b>EDU_Converter.exe</b>를 실행하고 창에서 <b>[업데이트]</b>를 눌러요.</li>
+        <li>켜져 있던 예전 앱은 알아서 닫히고, 새 버전이 트레이에 다시 떠요. 끝!</li>
+      </ol>
+      <p style="color:var(--sub);margin:12px 0 0">지금 쓰는 버전은 트레이 아이콘 우클릭 → <b>정보</b>에서 볼 수 있어요.</p>
+    </div>
+  </section>
+
   <section id="download" class="download">
     <div class="card">
       <img src="/img/icon.png" width="256" height="256" alt="EDU_Converter 아이콘">
-      <h2 style="margin:0 0 6px">EDU_Converter 0.3.2</h2>
+      <h2 style="margin:0 0 6px" id="latest-name">EDU_Converter 0.3.2</h2>
       <p style="color:var(--sub);margin:0 0 22px">Windows 10/11 · zip 약 94MB</p>
       <div class="cta">
         <a class="btn" href="/download"><svg><use href="#win"/></svg>Windows용 다운로드</a>
@@ -268,6 +282,10 @@
     document.getElementById("st-release").textContent = fmt(s.releaseDownloads);
     document.getElementById("st-download").textContent = fmt(s.downloadClicks);
     document.getElementById("st-github").textContent = fmt(s.githubClicks);
+  }).catch(() => {});
+  // 받기 카드의 버전: 릴리스를 올리면 페이지를 고치지 않아도 최신 번호가 보이게
+  fetch("/api/latest").then((r) => r.ok ? r.json() : null).then((l) => {
+    if (l && /^\d+(\.\d+){0,3}$/.test(l.version)) document.getElementById("latest-name").textContent = `EDU_Converter ${l.version}`;
   }).catch(() => {});
 </script>
 </body>
