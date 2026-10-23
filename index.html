@@ -301,7 +301,9 @@
     document.getElementById("st-github").textContent = fmt(s.githubClicks);
   }).catch(() => {});
   // 최신 릴리스: 맨 위 "새 소식"(버전·바뀐 점·날짜)과 버전 표시. 릴리스만 올리면 페이지를 고치지 않아도 바뀐다
-  fetch("/api/latest").then((r) => r.ok ? r.json() : null).then((l) => {
+  // l.latest = 가장 최근 릴리스(사이트 표시용). l.version은 앱 알림용이라 알림을 켠 릴리스만 들어 있다
+  fetch("/api/latest").then((r) => r.ok ? r.json() : null).then((resp) => {
+    const l = resp && { ...resp, version: resp.latest || resp.version };
     if (!l || !/^\d+(\.\d+){0,3}$/.test(l.version)) return;
     const set = (id, text) => { document.getElementById(id).textContent = text; };  // textContent: 릴리스 글을 HTML로 넣지 않는다
     set("latest-name", `EDU_Converter ${l.version}`);
