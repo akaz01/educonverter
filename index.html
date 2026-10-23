@@ -60,6 +60,13 @@
   .hero p.lead { font-size: 19px; color: var(--sub); margin: 0 0 26px; }
   .cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
   .meta { font-size: 14px; color: var(--sub); margin-top: 14px; }
+  .news { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; max-width: 100%; margin: 0 0 18px;
+    padding: 7px 14px 7px 7px; border-radius: 22px; background: var(--card); border: 1px solid var(--line);
+    box-shadow: var(--shadow); color: var(--ink); text-decoration: none; font-size: 15px; }
+  .news[hidden] { display: none; }
+  .news:hover, .news:focus-visible { border-color: var(--accent); }
+  .news-tag { background: var(--accent); color: #fff; border-radius: 999px; padding: 3px 10px; font-weight: 700; font-size: 13px; }
+  .news-date { color: var(--sub); font-size: 13px; }
   .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 22px 0 0; max-width: 480px; }
   .stats div { background: var(--card); border-radius: 18px; padding: 12px 14px; box-shadow: var(--shadow); }
   .stats dt { font-size: 13px; color: var(--sub); }
@@ -133,6 +140,11 @@
 
   <header class="hero">
     <div>
+      <a class="news" id="news" href="#update" hidden>
+        <span class="news-tag" id="news-version"></span>
+        <span class="news-text" id="news-text"></span>
+        <span class="news-date" id="news-date"></span>
+      </a>
       <h1>끌다가 <em>Q</em> 한 번,<br>놓으면 <em>변환 끝.</em></h1>
       <p class="lead">한글·PDF·Word·Excel·PPT·이미지 변환부터 화질 지키는 용량 줄이기, PDF 쪽 편집까지.
         프로그램을 열 필요 없이 <b>파일을 끄는 손길 그대로</b> 끝내는 선생님용 Windows 앱이에요.</p>
@@ -140,7 +152,7 @@
         <a class="btn" href="/download"><svg><use href="#win"/></svg>Windows용 다운로드</a>
         <a class="btn ghost" href="#how">어떻게 써요?</a>
       </div>
-      <div class="meta">버전 0.3.2 · Windows 10/11 · 관리자 권한 없이 설치</div>
+      <div class="meta"><span id="meta-version">버전 0.3.2</span> · Windows 10/11 · 관리자 권한 없이 설치</div>
       <dl class="stats" aria-live="polite">
         <div><dt>누적 다운로드</dt><dd id="st-release">–</dd></div>
         <div><dt>다운로드 버튼 클릭</dt><dd id="st-download">–</dd></div>
@@ -283,9 +295,17 @@
     document.getElementById("st-download").textContent = fmt(s.downloadClicks);
     document.getElementById("st-github").textContent = fmt(s.githubClicks);
   }).catch(() => {});
-  // 받기 카드의 버전: 릴리스를 올리면 페이지를 고치지 않아도 최신 번호가 보이게
+  // 최신 릴리스: 맨 위 "새 소식"(버전·바뀐 점·날짜)과 버전 표시. 릴리스만 올리면 페이지를 고치지 않아도 바뀐다
   fetch("/api/latest").then((r) => r.ok ? r.json() : null).then((l) => {
-    if (l && /^\d+(\.\d+){0,3}$/.test(l.version)) document.getElementById("latest-name").textContent = `EDU_Converter ${l.version}`;
+    if (!l || !/^\d+(\.\d+){0,3}$/.test(l.version)) return;
+    const set = (id, text) => { document.getElementById(id).textContent = text; };  // textContent: 릴리스 글을 HTML로 넣지 않는다
+    set("latest-name", `EDU_Converter ${l.version}`);
+    set("meta-version", `버전 ${l.version}`);
+    set("news-version", `NEW ${l.version}`);
+    set("news-text", l.summary || "새 버전이 나왔어요. 업데이트 방법 보기 →");
+    const d = /^(\d{4})-(\d{2})-(\d{2})$/.exec(l.date || "");
+    set("news-date", d ? `${Number(d[2])}월 ${Number(d[3])}일` : "");
+    document.getElementById("news").hidden = false;
   }).catch(() => {});
 </script>
 </body>
