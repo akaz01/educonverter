@@ -1,9 +1,9 @@
-// /download, /github → 횟수 1 올리고 실제 주소로 보낸다. 집계가 실패해도 이동은 항상 한다.
+// /download → 횟수 1 올리고 최신 릴리스 파일로 보낸다. 집계가 실패해도 이동은 항상 한다.
+// 깃허브는 릴리스 파일 보관·다운로드 수 집계에만 쓴다: 사이트에서 깃허브 페이지로 보내는 길(/github)은 없앴다.
 import { KEYS, redis } from "./_redis.js";
 
 const TARGETS = {
-  download: "https://github.com/akaz01/educonverter/releases/latest/download/EDU_Converter_win.zip",
-  github: "https://github.com/akaz01/educonverter",
+  download: "https://github.com/akaz01/plopp/releases/latest/download/Plopp_win.zip",
 };
 // 링크 미리보기·검색 봇은 세지 않는다
 const BOT = /bot|crawl|spider|slurp|preview|facebookexternalhit|kakaotalk-scrap|whatsapp|discord|curl|wget|python-requests/i;

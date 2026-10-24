@@ -1,6 +1,13 @@
 {
+  "redirects": [
+    {
+      "source": "/:path((?!api/).*)",
+      "has": [{ "type": "host", "value": "edu-converter.vercel.app" }],
+      "destination": "https://plopp-sh.vercel.app/:path",
+      "permanent": true
+    }
+  ],
   "rewrites": [
-    { "source": "/download", "destination": "/api/go?to=download" },
-    { "source": "/github", "destination": "/api/go?to=github" }
+    { "source": "/download", "destination": "/api/go?to=download" }
   ]
 }

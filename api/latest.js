@@ -5,7 +5,7 @@
 //   summary는 릴리스 설명의 "**이번에 바뀐 점**: …" 한 줄.
 // 학교처럼 여러 PC가 공인 IP 하나를 쓰면 GitHub API 한도(로그인 없이 IP당 60회/시간)에 걸리므로 여기서 캐시한다.
 // 집계·기록은 하지 않는다(앱은 개인정보 없이 버전만 묻는다). 앱은 이 주소만 묻고 GitHub에 직접 붙지 않는다.
-const RELEASES = "https://api.github.com/repos/akaz01/educonverter/releases?per_page=30";
+const RELEASES = "https://api.github.com/repos/akaz01/plopp/releases?per_page=30";
 const VERSION = /^v?\d+(\.\d+){0,3}$/;
 const NOTIFY = /<!--\s*notify\s*-->/i; // scripts/announce_update.py가 넣고 뺀다
 const SUMMARY = /\*\*이번에 바뀐 점\*\*\s*[:：]\s*(.+)/;
@@ -34,7 +34,7 @@ export function pick(releases) {
 export default async function handler(req, res) {
   try {
     const gh = await fetch(RELEASES, {
-      headers: { Accept: "application/vnd.github+json", "User-Agent": "edu-converter-site" },
+      headers: { Accept: "application/vnd.github+json", "User-Agent": "plopp-site" },
     });
     if (!gh.ok) throw new Error(`GitHub ${gh.status}`);
     const { latest, announced } = pick(await gh.json());
