@@ -9,395 +9,566 @@
 <meta property="og:title" content="Plopp — 끌다가 Q, 놓으면 퐁">
 <meta property="og:description" content="파일 변환 · 용량 줄이기 · PDF 편집 · 화면 녹화 · 영상 자르기. 예전 이름 EDU_Converter.">
 <meta property="og:image" content="https://plopp-sh.vercel.app/img/og.png">
+<meta name="theme-color" content="#0B0B0C">
 <link rel="icon" href="/img/icon.png">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <style>
   :root {
-    --bg: #111111; --card: #1E1E1E; --card2: #262626; --ink: #F5F5F5; --sub: #A8A8A8;
-    --line: #2E2E2E; --accent: #FFB020; --btn: #F5F5F5; --btn-ink: #141414;
-    --radius: 22px; --shadow: 0 18px 40px rgba(0, 0, 0, .45);
+    --page: #0B0B0C;        /* 페이지 바탕: 브랜드 검정보다 한 톤 깊게 */
+    --stage: #141414;       /* 브랜드 검정: 무대(카드·원판) */
+    --surface: #1C1C1E;
+    --line: rgba(255, 255, 255, .09);
+    --ink: #F5F5F7;
+    --sub: #9C9CA1;
+    --dim: #6E6E73;
+    --accent: #FFB020;      /* 퐁 노랑: 선·점·강조 글자에만 */
+    --pill: #262626;
+    --ease: cubic-bezier(.2, .7, .2, 1);
+    --gutter: clamp(16px, 4vw, 40px);
   }
   * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
+  html { scroll-behavior: smooth; scroll-padding-top: 64px; }
   body {
-    margin: 0; background: var(--bg); color: var(--ink); line-height: 1.7; font-size: 17px;
+    margin: 0; background: var(--page); color: var(--ink); font-size: 17px; line-height: 1.6;
     font-family: "Pretendard", "Malgun Gothic", system-ui, sans-serif; word-break: keep-all;
+    -webkit-font-smoothing: antialiased;
   }
-  img { max-width: 100%; height: auto; display: block; }
+  img, video { max-width: 100%; display: block; }
+  img { height: auto; }  /* 폭만 줄고 높이는 그대로 남아 그림이 늘어나지 않게 */
   a { color: inherit; }
-  a:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
-  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
-  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
-  .skip { position: absolute; left: 16px; top: -60px; z-index: 10; background: var(--btn); color: var(--btn-ink);
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 8px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .skip { position: absolute; left: 16px; top: -60px; z-index: 50; background: var(--ink); color: #141414;
     padding: 10px 16px; border-radius: 10px; font-weight: 800; text-decoration: none; }
   .skip:focus { top: 12px; }
-  .keys { white-space: nowrap; }
+  .wrap { width: min(1180px, 100% - 2 * var(--gutter)); margin: 0 auto; }
 
-  nav { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; gap: 12px; }
-  .brand { display: flex; align-items: center; gap: 10px; font-size: 24px; font-weight: 800; text-decoration: none; letter-spacing: -.5px; }
-  .brand img { width: 38px; }
-  .navlinks { display: flex; gap: 10px; }
-  .btn {
-    display: inline-flex; align-items: center; gap: 10px; padding: 14px 26px; border-radius: 14px;
-    background: var(--btn); color: var(--btn-ink); text-decoration: none; font-size: 18px; font-weight: 800;
-    transition: transform .15s ease, box-shadow .15s ease;
+  /* ---- 맨 위 노란 안내 띠: 예전 이름으로 찾아온 분이 바로 알아보게 ---- */
+  .notice { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 4px 14px; min-height: 44px;
+    padding: 8px var(--gutter); background: var(--accent); color: #141414; text-decoration: none; font-size: 15px; text-align: center; }
+  .notice b { font-weight: 800; }
+  .notice-go { font-weight: 800; white-space: nowrap; }
+  .notice-go::after { content: " ›"; }
+  .notice:hover .notice-go { text-decoration: underline; text-underline-offset: 3px; }
+  .notice:focus-visible { outline: 3px solid #141414; outline-offset: -5px; border-radius: 0; }
+
+  /* ---- 새 이름 장 ---- */
+  .renamed { padding: clamp(90px, 11vw, 150px) 0; border-top: 1px solid var(--line);
+    background: radial-gradient(50% 70% at 50% 50%, rgba(255, 176, 32, .08), transparent 70%); }
+  .renamed .headline { display: flex; justify-content: center; align-items: baseline; flex-wrap: wrap; gap: 0 .35em; }
+  .renamed .old { color: var(--dim); text-decoration: line-through; text-decoration-color: var(--accent);
+    text-decoration-thickness: .07em; font-size: .62em; font-weight: 700; letter-spacing: -.02em; }
+  .renamed .arrow { color: var(--accent); font-size: .7em; }
+
+  /* ---- 위 막대: 반투명, 스크롤하면 선이 생긴다 ---- */
+  .bar { position: sticky; top: 0; z-index: 40; background: rgba(11, 11, 12, .72);
+    backdrop-filter: saturate(160%) blur(18px); -webkit-backdrop-filter: saturate(160%) blur(18px);
+    border-bottom: 1px solid transparent; transition: border-color .3s; }
+  .bar.scrolled { border-bottom-color: var(--line); }
+  .bar .wrap { display: flex; align-items: center; justify-content: space-between; height: 56px; gap: 16px; }
+  .brand { display: flex; align-items: center; gap: 9px; font-weight: 800; font-size: 19px; letter-spacing: -.02em; text-decoration: none; }
+  .brand img { width: 28px; height: 28px; border-radius: 7px; }
+  .bar nav { display: flex; align-items: center; gap: 26px; font-size: 14px; color: var(--sub); }
+  .bar nav a { text-decoration: none; transition: color .2s; }
+  .bar nav a:hover { color: var(--ink); }
+  .bar .get { color: #141414; background: var(--ink); padding: 7px 16px; border-radius: 999px; font-weight: 700; }
+  .bar .get:hover { color: #141414; background: #fff; }
+
+  /* ---- 버튼 ---- */
+  .btn { display: inline-flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 28px; border-radius: 999px;
+    background: var(--ink); color: #141414; text-decoration: none; font-weight: 800; font-size: 17px;
+    transition: transform .2s var(--ease), background .2s; }
+  .btn:hover { background: #fff; transform: translateY(-1px); }
+  .btn svg { width: 18px; height: 18px; fill: currentColor; }
+  .link { color: var(--accent); text-decoration: none; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+  .link:hover { text-decoration: underline; text-underline-offset: 4px; }
+  .link::after { content: "›"; font-size: 1.2em; line-height: 1; transition: transform .2s; }
+  .link:hover::after { transform: translateX(3px); }
+
+  /* ---- 글자 크기 체계 ---- */
+  .eyebrow { font-size: 15px; font-weight: 700; color: var(--accent); letter-spacing: .02em; margin: 0 0 18px; }
+  .display { font-size: clamp(52px, 10.5vw, 132px); line-height: 1.02; letter-spacing: -.045em; font-weight: 800; margin: 0; }
+  .headline { font-size: clamp(38px, 6.2vw, 80px); line-height: 1.08; letter-spacing: -.04em; font-weight: 800; margin: 0; }
+  .lede { font-size: clamp(18px, 2.1vw, 23px); line-height: 1.5; color: var(--sub); margin: 22px 0 0; max-width: 34em; }
+  .lede b { color: var(--ink); font-weight: 700; }
+  .center { text-align: center; }
+  .center .lede { margin-left: auto; margin-right: auto; }
+  .accent { color: var(--accent); }
+  /* 제목 안의 키 모양 Q: 이 앱의 손짓 그 자체 */
+  .key { display: inline-grid; place-items: center; min-width: .92em; height: .92em; padding: 0 .12em; margin: 0 .04em;
+    border-radius: .17em; background: var(--ink); color: #141414; font-size: .86em; line-height: 1;
+    box-shadow: 0 .07em 0 #8E8E93, 0 .1em .3em rgba(0, 0, 0, .5); vertical-align: .06em; }
+  kbd { font: inherit; font-weight: 700; padding: 1px 8px; border-radius: 7px; background: var(--surface);
+    border: 1px solid var(--line); border-bottom-width: 3px; white-space: nowrap; }
+
+  section { position: relative; }
+  .chapter { padding: clamp(96px, 12vw, 168px) 0; }
+  .chapter + .chapter { border-top: 1px solid var(--line); }
+
+  /* ---- 첫 화면 ---- */
+  .hero { padding: clamp(28px, 6vw, 64px) 0 clamp(80px, 10vw, 120px); text-align: center; overflow: hidden; }
+  .pills { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 28px; }
+  .tag { display: inline-flex; align-items: center; gap: 10px; padding: 7px 14px 7px 8px; border-radius: 999px;
+    background: var(--surface); border: 1px solid var(--line); font-size: 14px; text-decoration: none; color: var(--sub); max-width: 100%; }
+  .tag b { color: #141414; background: var(--accent); border-radius: 999px; padding: 2px 9px; font-size: 12px; white-space: nowrap; }
+  .tag span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tag:hover { color: var(--ink); border-color: rgba(255, 255, 255, .2); }
+  .tag[hidden] { display: none; }
+  .hero .lede { margin-left: auto; margin-right: auto; }
+  .hero .cta { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 14px 26px; margin-top: 40px; }
+  .meta { margin-top: 18px; font-size: 14px; color: var(--dim); }
+  .meta span + span::before { content: " · "; }
+
+  /* ---- 시그니처: 진짜 변환 메뉴를 그대로 옮긴 원판 ---- */
+  .dial { --size: min(460px, 88vw); position: relative; width: var(--size); height: var(--size); margin: clamp(40px, 5vw, 64px) auto 0; }
+  .dial::before { content: ""; position: absolute; inset: -18%; border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(255, 176, 32, .16), rgba(255, 176, 32, 0)); pointer-events: none; }
+  .disc { position: absolute; inset: 0; border-radius: 50%;
+    background: radial-gradient(circle at 50% 30%, #222 0%, #121212 70%);
+    box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .12), 0 40px 80px rgba(0, 0, 0, .6); }
+  .track { position: absolute; inset: 15.5%; border-radius: 50%; border: calc(var(--size) * .145) solid rgba(255, 255, 255, .04); }
+  .hub { position: absolute; left: 50%; top: 50%; width: 36%; height: 36%; transform: translate(-50%, -50%); border-radius: 50%;
+    background: #0A0A0A; display: grid; place-items: center; align-content: center; gap: 2px; z-index: 2; text-align: center; }
+  .hub svg { width: 40%; height: auto; margin-bottom: 4px; }
+  .hub strong { font-size: max(13px, calc(var(--size) * .034)); font-weight: 800; letter-spacing: -.01em; }
+  .hub small { font-size: max(11px, calc(var(--size) * .025)); color: #A8A8A8; }
+  .slot { position: absolute; left: 50%; top: 50%; z-index: 3;
+    --r: calc(var(--size) * .5 * .703);
+    transform: translate(-50%, -50%) rotate(var(--a)) translateX(var(--r)) rotate(calc(-1 * var(--a)));
+    height: calc(var(--size) * .116); padding: 0 calc(var(--size) * .04); border-radius: 999px; border: 1px solid rgba(255, 255, 255, .08);
+    background: var(--pill); color: #F2F2F2; font: inherit; font-weight: 800; font-size: calc(var(--size) * .047);
+    display: inline-flex; align-items: center; gap: .3em; cursor: pointer; white-space: nowrap;
+    transition: background .25s var(--ease), color .25s var(--ease), box-shadow .25s var(--ease); }
+  .slot.size { --r: calc(var(--size) * .5 * .768); }
+  .slot svg { width: 1em; height: 1em; }
+  .slot.multi::after { content: "•••"; position: absolute; left: 0; right: 0; bottom: .05em; text-align: center;
+    font-size: .42em; letter-spacing: .1em; color: var(--accent); line-height: 1; }
+  .slot.lit { background: #fff; color: #141414; box-shadow: 0 0 0 3px #141414, 0 0 0 6px var(--accent); }
+  .slot.lit::after { color: transparent; }
+  .slot:focus-visible { outline-offset: 6px; border-radius: 999px; }
+  .beam { position: absolute; left: 50%; top: 50%; height: 4px; width: calc(var(--size) * .17); z-index: 1;
+    margin-top: -2px; transform-origin: 0 50%; border-radius: 4px; background: var(--accent);
+    transform: rotate(var(--la, 140deg)) translateX(calc(var(--size) * .19)); transition: transform .45s var(--ease), opacity .3s; }
+  .ripple { position: absolute; z-index: 4; width: 24px; height: 24px; margin: -12px; border-radius: 50%;
+    border: 3px solid var(--accent); opacity: 0; pointer-events: none; }
+  .ripple.go { animation: plop .7s var(--ease); }
+  @keyframes plop { from { opacity: .9; transform: scale(.4); } to { opacity: 0; transform: scale(4.2); } }
+  .dial-caption { margin: 34px auto 0; min-height: 3.2em; max-width: 30em; color: var(--sub); font-size: 16px; }
+  .dial-caption b { color: var(--ink); }
+
+  /* ---- 영상 ---- */
+  .film { margin: clamp(44px, 6vw, 72px) auto 0; width: min(960px, 100%); position: relative; border-radius: clamp(18px, 2.4vw, 30px); overflow: hidden;
+    background: var(--stage); border: 1px solid var(--line); aspect-ratio: 16 / 9; box-shadow: 0 50px 100px rgba(0, 0, 0, .55); }
+  .film video { width: 100%; height: 100%; object-fit: cover; }
+  .sound { position: absolute; right: 16px; bottom: 16px; min-height: 44px; padding: 0 18px; border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, .22); background: rgba(10, 10, 10, .66); color: #fff; font: inherit;
+    font-size: 14px; font-weight: 700; cursor: pointer; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  .sound:hover { background: rgba(10, 10, 10, .88); }
+
+  /* ---- 아홉 칸 ---- */
+  .slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin: clamp(48px, 6vw, 80px) 0 0; padding: 0;
+    background: var(--line); border: 1px solid var(--line); border-radius: 24px; overflow: hidden; }
+  .slots li { list-style: none; background: var(--page); padding: clamp(22px, 3vw, 34px); display: grid; gap: 10px; align-content: start; }
+  .slots .chip { justify-self: start; display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 999px;
+    background: var(--pill); border: 1px solid var(--line); font-weight: 800; font-size: 15px; }
+  .slots .chip i { font-style: normal; color: var(--accent); font-size: 11px; letter-spacing: .08em; }
+  .slots strong { font-size: clamp(19px, 2vw, 23px); letter-spacing: -.02em; line-height: 1.35; }
+  .slots p { margin: 0; color: var(--dim); font-size: 14px; }
+  .note-dots { color: var(--dim); font-size: 14px; margin-top: 18px; }
+  .note-dots i { font-style: normal; color: var(--accent); }
+
+  /* ---- 기능 장(章): 큰 제목 한 줄 + 큰 화면 ---- */
+  .feature { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(40px, 6vw, 96px); align-items: center; }
+  .feature.stack { grid-template-columns: 1fr; text-align: center; }
+  .feature.stack .lede { margin-left: auto; margin-right: auto; }
+  .shot { border-radius: clamp(16px, 2vw, 26px); overflow: hidden; border: 1px solid var(--line); background: var(--stage);
+    box-shadow: 0 40px 90px rgba(0, 0, 0, .55); }
+  .shot.bare { border: none; background: none; box-shadow: none; overflow: visible; }
+  .shot.bare img { filter: drop-shadow(0 30px 60px rgba(0, 0, 0, .55)); }
+  .feature .shot.tall { width: min(380px, 100%);  /* 원본 760px: 고해상도 화면(2배)에서도 늘어나지 않는 폭 */ justify-self: center; }
+  .feature .shot.tall img { width: 100%; }
+  .feature.stack .shot { margin: clamp(44px, 6vw, 72px) auto 0; width: min(880px, 100%); }  /* 원본 1600px의 절반 남짓: 2배 화면에서도 거의 원본 크기 */
+  .facts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+  .feature.stack .facts { justify-content: center; }
+  .facts span { padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line); color: var(--sub); font-size: 14px; }
+
+  /* ---- 약속 세 가지 ---- */
+  .promises { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(28px, 4vw, 56px); margin-top: clamp(56px, 7vw, 96px); }
+  .promises div { border-top: 2px solid var(--accent); padding-top: 22px; }
+  .promises strong { display: block; font-size: clamp(34px, 4.6vw, 56px); letter-spacing: -.04em; line-height: 1.1; font-weight: 800; }
+  .promises p { margin: 12px 0 0; color: var(--sub); }
+
+  /* ---- 설치 3단계(순서가 있는 일이라 번호를 쓴다) ---- */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: clamp(48px, 6vw, 72px); counter-reset: s; padding: 0; }
+  .steps li { list-style: none; counter-increment: s; background: var(--stage); border: 1px solid var(--line); border-radius: 22px; padding: 28px; }
+  .steps li::before { content: counter(s); display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%;
+    background: var(--accent); color: #141414; font-weight: 800; margin-bottom: 18px; }
+  .steps strong { display: block; font-size: 21px; letter-spacing: -.02em; margin-bottom: 6px; }
+  .steps p { margin: 0; color: var(--sub); font-size: 15px; }
+  .needs { margin-top: 26px; color: var(--dim); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 22px; justify-content: center; }
+
+  /* ---- 업데이트 안내(앱 알림이 여기로 온다) ---- */
+  .update { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(28px, 4vw, 56px); align-items: center;
+    margin-top: clamp(48px, 6vw, 72px); }
+  .update ol { margin: 0; padding: 0; counter-reset: u; display: grid; gap: 14px; }
+  .update li { list-style: none; counter-increment: u; display: grid; grid-template-columns: 34px 1fr; gap: 14px; color: var(--sub); }
+  .update li::before { content: counter(u); width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center;
+    border: 1px solid var(--line); color: var(--ink); font-weight: 800; font-size: 15px; }
+  .update li b { color: var(--ink); }
+  .edu { margin: 0; padding: 22px 24px; border-radius: 20px; background: var(--stage); border: 1px solid var(--line); color: var(--sub); }
+  .edu b { color: var(--ink); }
+
+  /* ---- 마지막 다운로드 ---- */
+  .final { text-align: center; padding: clamp(120px, 16vw, 200px) 0; border-top: 1px solid var(--line);
+    background: radial-gradient(60% 60% at 50% 38%, rgba(255, 176, 32, .10), transparent 70%); }
+  .final img { width: 96px; height: 96px; margin: 0 auto 30px; border-radius: 22px; }
+  .final .btn { margin-top: 40px; }
+  .final .lede { margin-left: auto; margin-right: auto; }
+  .stats { display: flex; justify-content: center; gap: 40px; margin-top: 48px; }
+  .stats div { display: grid; gap: 2px; }
+  .stats dt { font-size: 13px; color: var(--dim); }
+  .stats dd { margin: 0; font-size: 30px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+
+  footer { border-top: 1px solid var(--line); padding: 36px 0 56px; color: var(--dim); font-size: 13px; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 24px; }
+  footer a { color: var(--sub); }
+
+  /* ---- 나타나기(스크롤). 움직임을 줄인 설정이면 처음부터 완성된 모습 ---- */
+  .reveal { opacity: 0; transform: translateY(28px); transition: opacity .9s var(--ease), transform .9s var(--ease); }
+  .reveal.in { opacity: 1; transform: none; }
+  .js-off .reveal { opacity: 1; transform: none; }
+
+  @media (max-width: 900px) {
+    .feature, .update { grid-template-columns: 1fr; }
+    .feature .txt { text-align: center; }
+    .feature .lede { margin-left: auto; margin-right: auto; }
+    .feature .facts { justify-content: center; }
+    .feature .shot { order: 2; }
+    .slots { grid-template-columns: repeat(2, 1fr); }
+    .promises, .steps { grid-template-columns: 1fr; }
+    .bar nav .opt { display: none; }
   }
-  .btn:hover { transform: translateY(-2px); box-shadow: 0 0 0 3px var(--accent); }
-  .btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
-  .btn.small { padding: 9px 18px; font-size: 15px; }
-  .btn.ghost { background: var(--card2); color: var(--ink); }
-  .btn svg { width: 20px; height: 20px; fill: currentColor; }
-
-  /* 이름이 바뀌었다는 안내 */
-  .renamed {
-    display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: center;
-    background: var(--card); border: 1px solid var(--line); border-left: 5px solid var(--accent);
-    border-radius: var(--radius); padding: 20px 24px; margin: 6px 0 10px;
-  }
-  .renamed .from { font-size: 14px; color: var(--sub); text-align: center; line-height: 1.3; }
-  .renamed .from b { display: block; font-size: 26px; color: var(--accent); margin-top: 4px; }
-  .renamed .title { margin: 0 0 4px; font-size: 21px; font-weight: 800; color: var(--ink); line-height: 1.45; }
-  .renamed p { margin: 0; color: var(--sub); font-size: 16px; }
-  .renamed p b { color: var(--ink); }
-
-  .hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 36px; align-items: center; padding: 36px 0 64px; }
-  .hero h1 { font-size: clamp(44px, 6.4vw, 76px); line-height: 1.08; margin: 0 0 18px; letter-spacing: -2px; font-weight: 900; }
-  .hero h1 em { font-style: normal; color: var(--accent); }
-  .hero p.lead { font-size: 19px; color: var(--sub); margin: 0 0 26px; }
-  .hero p.lead b { color: var(--ink); }
-  .cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
-  .meta { font-size: 14px; color: var(--sub); margin-top: 14px; }
-  /* 새 소식: [배지] 글 → 를 한 줄로. 글이 길면 배지·화살표는 제자리에 두고 글만 줄바꿈 */
-  .news { display: inline-grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: 12px;
-    max-width: 100%; margin: 0 0 20px; padding: 8px 16px 8px 8px; border-radius: 16px;
-    background: var(--card); border: 1px solid var(--line); text-decoration: none; font-size: 15px; line-height: 1.45; }
-  .news[hidden] { display: none; }
-  .news-tag { background: var(--accent); color: #141414; border-radius: 10px; padding: 4px 10px;
-    font-weight: 800; font-size: 13px; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .news-go { color: var(--accent); font-weight: 800; transition: transform .15s ease; }
-  .news:hover, .news:focus-visible { border-color: var(--accent); }
-  .news:hover .news-go, .news:focus-visible .news-go { transform: translateX(3px); }
-  .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 22px 0 0; max-width: 400px; }
-  .stats div { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px;
-    display: flex; flex-direction: column; justify-content: space-between; gap: 2px; }
-  .stats dt { font-size: 13px; color: var(--sub); line-height: 1.35; }
-  .stats dd { margin: 0; font-size: 26px; font-weight: 900; font-variant-numeric: tabular-nums; }
-  .intro { position: relative; margin: 0; border-radius: 20px; overflow: hidden; border: 1px solid var(--line);
-    background: var(--card); box-shadow: 0 30px 60px rgba(0, 0, 0, .6); aspect-ratio: 16 / 9; }
-  .intro video { display: block; width: 100%; height: 100%; object-fit: cover; }
-  .intro-btn { position: absolute; right: 12px; bottom: 12px; min-height: 40px; padding: 0 14px; border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, .25); background: rgba(10, 10, 10, .72); color: #fff;
-    font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; }
-  .intro-btn:hover { background: rgba(10, 10, 10, .9); }
-  .intro-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-
-  section { padding: 64px 0; }
-  section > h2 { font-size: clamp(30px, 4vw, 44px); margin: 0 0 10px; letter-spacing: -1px; font-weight: 900; }
-  section > p.sub { color: var(--sub); margin: 0 0 34px; font-size: 18px; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 26px; }
-
-  /* 새로 생긴 것: 큰 칸 둘 + 작은 칸 셋 */
-  .bento { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }
-  .bento .card { display: flex; flex-direction: column; gap: 6px; }
-  .bento .w3 { grid-column: span 3; } .bento .w2 { grid-column: span 2; }
-  .bento h3 { margin: 0; font-size: 21px; }
-  .bento p { margin: 0; color: var(--sub); font-size: 16px; }
-  .bento p b { color: var(--ink); }
-  .tag { align-self: flex-start; font-size: 12px; font-weight: 800; letter-spacing: .5px; color: #141414;
-    background: var(--accent); border-radius: 8px; padding: 2px 8px; }
-
-  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-  .step .num { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center;
-    background: var(--btn); color: var(--btn-ink); font-size: 22px; font-weight: 900; margin-bottom: 12px; }
-  .step h3 { margin: 0 0 6px; font-size: 22px; }
-  .step p { margin: 0; color: var(--sub); }
-  kbd { font-family: inherit; font-weight: 800; background: var(--card2); border: 1px solid #444; border-bottom-width: 4px;
-    border-radius: 8px; padding: 0 8px; color: var(--ink); white-space: nowrap; }
-
-  .table { overflow-x: auto; padding: 8px 10px; }
-  table { width: 100%; border-collapse: collapse; min-width: 560px; }
-  th, td { text-align: left; padding: 14px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  tr:last-child td { border-bottom: none; }
-  th { font-weight: 700; color: var(--sub); font-size: 15px; }
-  .chip { display: inline-block; padding: 4px 14px; border-radius: 999px; background: var(--card2); border: 1px solid #3A3A3A;
-    font-weight: 800; white-space: nowrap; }
-  .dots { color: var(--accent); font-weight: 900; letter-spacing: -1px; }
-
-  .feature { display: grid; grid-template-columns: 1fr 1.2fr; gap: 40px; align-items: center; margin-bottom: 64px; }
-  .feature.rev { grid-template-columns: 1.2fr 1fr; }
-  .feature.rev .txt { order: 2; }
-  .feature:last-child { margin-bottom: 0; }
-  .feature h3 { font-size: 30px; margin: 0 0 10px; letter-spacing: -.5px; }
-  .feature p { color: var(--sub); margin: 0 0 8px; }
-  .feature p b { color: var(--ink); }
-  .shot { border-radius: 18px; overflow: hidden; border: 1px solid var(--line); box-shadow: var(--shadow); background: var(--card); }
-  .shot.plain { border: none; box-shadow: none; background: none; max-width: 380px; justify-self: center; }
-
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  .card h3 { margin: 0 0 10px; font-size: 22px; }
-  .card ol, .card ul { margin: 0; padding-left: 20px; color: var(--sub); }
-  .card li { margin-bottom: 6px; }
-  .card b { color: var(--ink); }
-  .note { color: var(--sub); margin: 14px 0 0; }
-
-  .download { text-align: center; }
-  .download .card { max-width: 640px; margin: 0 auto; padding: 44px 26px; }
-  .download .card > img { width: 104px; margin: 0 auto 12px; }
-  .download .cta { justify-content: center; }
-  footer { text-align: center; color: var(--sub); font-size: 14px; padding: 30px 0 50px; border-top: 1px solid var(--line); }
-  footer a { color: var(--ink); }
-
-  @media (max-width: 860px) {
-    .hero, .feature, .feature.rev, .grid2 { grid-template-columns: 1fr; }
-    .feature.rev .txt { order: 0; }
-    .feature { gap: 24px; margin-bottom: 52px; }
-    .bento { grid-template-columns: 1fr 1fr; }
-    .bento .w3, .bento .w2 { grid-column: auto; }
-    .bento .card:last-child { grid-column: 1 / -1; }
-    .hero { padding: 10px 0 24px; gap: 28px; }
-    .intro { width: 100%; max-width: 640px; justify-self: center; }
-    section { padding: 48px 0; }
-    section > p.sub { margin-bottom: 26px; }
-  }
-  @media (max-width: 700px) {
-    .steps { grid-template-columns: 1fr; }
-  }
-  @media (max-width: 600px) {
+  @media (max-width: 560px) {
     body { font-size: 16px; }
-    .renamed { grid-template-columns: 1fr; gap: 8px; padding: 18px 18px 18px 20px; }
-    .renamed .from { text-align: left; display: flex; align-items: baseline; gap: 8px; }
-    .renamed .from b { display: inline; font-size: 20px; margin: 0; }
-    .renamed .title { font-size: 19px; }
-    .renamed p { font-size: 15px; }
-    .bento { grid-template-columns: 1fr; }
-    .card { padding: 22px 20px; }
-    .cta .btn { flex: 1 1 100%; justify-content: center; }
-    .stats { gap: 8px; }
-    .stats div { padding: 10px 12px; }
-    .stats dt { font-size: 12px; }
-    .stats dd { font-size: 22px; }
-    /* 표 → 칸마다 카드처럼 세로로 */
-    .table { overflow: visible; padding: 4px 20px; }
-    table { min-width: 0; }
-    thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-    tr { display: block; padding: 14px 0; border-bottom: 1px solid var(--line); }
-    tbody tr:last-child { border-bottom: none; }
-    td { display: grid; grid-template-columns: 76px 1fr; gap: 8px; padding: 3px 0; border: none; font-size: 15px; }
-    td:first-child { display: block; padding-bottom: 8px; }
-    td[data-label]::before { content: attr(data-label); color: var(--sub); font-size: 13px; font-weight: 700; padding-top: 2px; }
-    .download .card { padding: 36px 20px; }
-    .download .card .cta { max-width: 320px; margin: 0 auto; }
-    footer .sep { display: none; }
-    footer .line { display: block; }
-    footer br { display: none; }
+    .slots { grid-template-columns: 1fr; }
+    .stats { gap: 28px; }
+    .hero .cta .btn { width: 100%; justify-content: center; }
   }
-  @media (prefers-reduced-motion: reduce) { .btn, .news-go { transition: none; } html { scroll-behavior: auto; } }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .slot, .beam, .btn { transition: none; }
+    .ripple { display: none; }
+  }
 </style>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="win" viewBox="0 0 16 16"><path d="M0 2.2 6.5 1.3v6.2H0zM7.3 1.2 16 0v7.5H7.3zM0 8.3h6.5v6.3L0 13.7zM7.3 8.3H16V16l-8.7-1.2z"/></symbol>
+  <!-- 퐁이: 앱 아이콘과 같은 방울 몸(132×110) + 퐁 선 -->
+  <symbol id="pongi" viewBox="-24 -40 180 156">
+    <g stroke="#FFB020" stroke-width="11" stroke-linecap="round"><path d="M-14 6-2 18M66-30v14M146 6l-12 12"/></g>
+    <path d="M66 0C100 0 128 38 132 76c3 21-12 34-33 34H33C12 110-3 97 0 76 4 38 32 0 66 0Z" fill="#fff" stroke="#141414" stroke-width="7"/>
+    <circle cx="46" cy="66" r="6.5" fill="#141414"/><circle cx="86" cy="66" r="6.5" fill="#141414"/>
+    <path d="M56 80q10 9 20 0" fill="none" stroke="#141414" stroke-width="5" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="adjust" viewBox="0 0 16 16"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1 5h14M1 11h14"/></g><circle cx="11" cy="5" r="2.2" fill="currentColor"/><circle cx="5" cy="11" r="2.2" fill="currentColor"/></symbol>
 </svg>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
-<div class="wrap">
-  <nav aria-label="주 메뉴">
-    <a class="brand" href="/" aria-label="Plopp 처음으로"><img src="/img/icon.png" alt="">Plopp</a>
-    <div class="navlinks">
-      <a class="btn small" href="#download">다운로드</a>
-    </div>
-  </nav>
 
-  <aside class="renamed" aria-labelledby="renamed-title">
-    <div class="from" aria-hidden="true">EDU_Converter<b>→ Plopp</b></div>
-    <div>
-      <p class="title" id="renamed-title">EDU_Converter가 Plopp으로 새로 태어났어요</p>
-      <p>선생님을 위해 만든 앱이었는데, 선생님뿐 아니라 정말 많은 분들이 관심을 보내 주셨어요.
-        그래서 누구나 쓰기 좋게 이름을 <b>Plopp</b>으로 바꾸고, 화면 녹화·영상 자르기 같은 기능을 늘려 새로 내놓았어요.
-        EDU_Converter에서 쓰던 설정은 그대로 이어져요.</p>
-    </div>
-  </aside>
+<a class="notice" href="#renamed"><span><b>EDU_Converter</b>가 <b>Plopp</b>이 되었어요</span><span class="notice-go">자세히 보기</span></a>
+<header class="bar" id="bar">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="Plopp 처음으로"><img src="/img/icon.png" width="28" height="28" alt="">Plopp</a>
+    <nav aria-label="주 메뉴">
+      <a class="opt" href="#film">영상</a>
+      <a class="opt" href="#slots">기능</a>
+      <a class="opt" href="#install">설치</a>
+      <a class="opt" href="#update">업데이트</a>
+      <a class="get" href="/download">다운로드</a>
+    </nav>
+  </div>
+</header>
 
-  <main id="main">
+<main id="main">
+  <!-- 1. 첫 화면: 손짓 하나 + 진짜 메뉴 -->
   <section class="hero" aria-labelledby="hero-title">
-    <div>
-      <a class="news" id="news" href="#update" hidden>
-        <span class="news-tag" id="news-version"></span>
-        <span class="news-text" id="news-text"></span>
-        <span class="news-go" aria-hidden="true">→</span>
-      </a>
-      <h1 id="hero-title">끌다가 <em>Q</em>,<br>놓으면 <em>퐁.</em></h1>
-      <p class="lead">한글·PDF·Word·Excel·PPT·이미지 변환, 화질 지키는 용량 줄이기, PDF 쪽 편집,
-        화면 녹화와 영상 자르기까지. 프로그램을 찾아 열 필요 없이 <b>파일을 끄는 손길 그대로</b> 끝내는 무료 Windows 앱이에요.</p>
+    <div class="wrap">
+      <div class="pills">
+        <a class="tag" id="news" href="#update" hidden><b id="news-version"></b><span id="news-text"></span></a>
+      </div>
+      <h1 class="display" id="hero-title">끌다가 <span class="key" aria-label="Q 키">Q</span>,<br>놓으면 <span class="accent">퐁.</span></h1>
+      <p class="lede">파일을 끄는 손길 그대로 <b>변환 · 용량 줄이기 · PDF 편집</b>까지.<br>Windows용 무료 앱이에요.</p>
+
+      <div class="dial" id="dial" role="group" aria-label="Plopp 변환 메뉴 미리보기. 칸을 누르면 무엇을 하는지 보여 줘요">
+        <div class="disc" aria-hidden="true"></div>
+        <div class="track" aria-hidden="true"></div>
+        <div class="beam" id="beam" aria-hidden="true"></div>
+        <div class="ripple" id="ripple" aria-hidden="true"></div>
+        <div class="hub" aria-hidden="true">
+          <svg><use href="#pongi"/></svg>
+          <strong id="hub-title">To PDF</strong>
+          <small id="hub-sub">보고서.hwp</small>
+        </div>
+        <button class="slot" style="--a:140deg" data-k="pdf">PDF</button>
+        <button class="slot multi" style="--a:175deg" data-k="image">Image</button>
+        <button class="slot multi" style="--a:210deg" data-k="hwp">HWP</button>
+        <button class="slot" style="--a:250deg" data-k="word">Word</button>
+        <button class="slot" style="--a:290deg" data-k="excel">Excel</button>
+        <button class="slot" style="--a:330deg" data-k="ppt">PPT</button>
+        <button class="slot multi" style="--a:5deg" data-k="text">Text</button>
+        <button class="slot multi" style="--a:40deg" data-k="edit">Edit</button>
+        <button class="slot multi size" style="--a:90deg" data-k="size"><svg aria-hidden="true"><use href="#adjust"/></svg>Size</button>
+      </div>
+      <p class="dial-caption" id="dial-caption" aria-live="polite"><b>PDF</b> — 이미지·한글·Office 문서를 PDF로</p>
+
       <div class="cta">
         <a class="btn" href="/download"><svg aria-hidden="true" focusable="false"><use href="#win"/></svg>Windows용 다운로드</a>
-        <a class="btn ghost" href="#how">어떻게 써요?</a>
+        <a class="link" href="#film">19초 영상 보기</a>
       </div>
-      <div class="meta"><span id="meta-version">새 버전</span><span id="meta-date"></span> · Windows 10/11 · 관리자 권한 없이 설치 · <span class="keys">한국어 / English</span></div>
-      <dl class="stats" aria-live="polite">
+      <p class="meta"><span id="meta-version">무료</span><span id="meta-date" hidden></span><span>Windows 10/11</span><span>관리자 권한 없이 설치</span></p>
+    </div>
+  </section>
+
+  <!-- 이름이 바뀌었다는 안내 -->
+  <section class="renamed" id="renamed" aria-labelledby="renamed-title">
+    <div class="wrap center reveal">
+      <p class="eyebrow">새 이름</p>
+      <h2 class="headline" id="renamed-title"><span class="old">EDU_Converter</span><span class="arrow" aria-hidden="true">→</span><span class="sr-only">에서 </span>Plopp</h2>
+      <p class="lede">선생님들을 위해 만든 EDU_Converter에 생각보다 많은 분들이 관심을 주셔서,<br>
+        누구나 쓰기 좋게 <b>이름을 Plopp으로 바꾸고 기능을 늘렸어요.</b></p>
+      <div class="facts" style="justify-content:center"><span>쓰던 설정 그대로</span><span>새로 받아 설치하면 자동 업데이트</span><span>예전 앱은 알아서 정리</span></div>
+      <p style="margin-top:28px"><a class="link" href="#update">업데이트하는 법</a></p>
+    </div>
+  </section>
+
+  <!-- 2. 영상 -->
+  <section class="chapter" id="film" aria-labelledby="film-title">
+    <div class="wrap center">
+      <h2 class="headline reveal" id="film-title">말보다 빠른 19초.</h2>
+      <figure class="film reveal">
+        <video id="intro" src="/video/plopp-intro-1080.mp4" poster="/video/plopp-intro.jpg" width="1920" height="1080"
+               autoplay muted loop playsinline preload="metadata" disablepictureinpicture disableremoteplayback
+               controlslist="nodownload noplaybackrate noremoteplayback"
+               aria-label="Plopp 소개 영상(19초): 파일을 끌다가 Q를 누르고 PDF 칸에 놓으면 변환된다. 용량 줄이기, PDF 쪽 편집, 영상 자르기, 화면 녹화, 블랙·화이트 테마까지"></video>
+        <button class="sound" id="intro-sound" type="button" aria-pressed="false">소리 켜기</button>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 3. 아홉 칸 -->
+  <section class="chapter" id="slots" aria-labelledby="slots-title">
+    <div class="wrap">
+      <div class="center reveal">
+        <h2 class="headline" id="slots-title">칸 하나에, 일 하나.</h2>
+        <p class="lede">원하는 칸에 놓기만 하면 원본 옆에 새 파일이 생겨요. 여러 개도 한꺼번에.</p>
+      </div>
+      <ul class="slots reveal">
+        <li><span class="chip">PDF</span><strong>무엇이든 PDF로</strong><p>이미지(여러 장은 한 파일) · 한글 · Word · Excel · PPT</p></li>
+        <li><span class="chip">Image <i>•••</i></span><strong>JPG · PNG · WEBP · BMP</strong><p>긴 이미지 한 장으로 잇기도</p></li>
+        <li><span class="chip">HWP <i>•••</i></span><strong>한글 문서로</strong><p>PDF · Word → HWP · HWPX</p></li>
+        <li><span class="chip">Word</span><strong>DOCX로</strong><p>PDF · 한글 문서</p></li>
+        <li><span class="chip">Excel</span><strong>표를 찾아 시트로</strong><p>PDF · 한글 · Word · PPT</p></li>
+        <li><span class="chip">PPT</span><strong>쪽마다 슬라이드로</strong><p>PDF · 한글 · Word · Excel</p></li>
+        <li><span class="chip">Text <i>•••</i></span><strong>글자만 · 웹 문서로</strong><p>TXT · HTML</p></li>
+        <li><span class="chip">Edit <i>•••</i></span><strong>편집 창 열기</strong><p>PDF 쪽 편집 · 영상 자르기</p></li>
+        <li><span class="chip">Size <i>•••</i></span><strong>같은 형식, 더 작게</strong><p>가장 작게 · 균형 · 고화질</p></li>
+      </ul>
+      <p class="note-dots center"><i>•••</i> 표시 칸은 놓은 뒤 한 번 더 골라요.</p>
+    </div>
+  </section>
+
+  <!-- 4. 용량 줄이기 -->
+  <section class="chapter" aria-labelledby="size-title">
+    <div class="wrap feature">
+      <div class="txt reveal">
+        <p class="eyebrow">Size</p>
+        <h2 class="headline" id="size-title">화질은 그대로.<br>용량만 줄여요.</h2>
+        <p class="lede">원본과 화질을 비교해 기준을 넘을 때만 줄여요. 한글 문서는 <b>안에 든 그림만</b>.</p>
+        <div class="facts"><span>사진</span><span>PDF</span><span>한글</span></div>
+      </div>
+      <div class="shot bare tall reveal"><img src="/img/size.png" width="760" height="1102" loading="lazy" alt="Size 칸에 놓으면 뜨는 선택 창: 가장 작게, 균형, 고화질"></div>
+    </div>
+  </section>
+
+  <!-- 5. PDF 쪽 편집 -->
+  <section class="chapter" aria-labelledby="pdf-title">
+    <div class="wrap feature stack">
+      <div class="txt reveal">
+        <p class="eyebrow">Edit · PDF</p>
+        <h2 class="headline" id="pdf-title">쪽 편집도 끌어서.</h2>
+        <p class="lede">순서 바꾸기 · 돌리기 · 지우기. 저장은 언제나 <b>새 파일</b>로.</p>
+      </div>
+      <div class="shot reveal"><img src="/img/editor.png" width="1600" height="800" loading="lazy" alt="PDF 쪽 편집 창. 왼쪽에 쪽 목록, 오른쪽에 고른 쪽이 크게 보인다"></div>
+    </div>
+  </section>
+
+  <!-- 6. 영상·녹화 -->
+  <section class="chapter" aria-labelledby="video-title">
+    <div class="wrap feature stack">
+      <div class="txt reveal">
+        <p class="eyebrow">Edit · 영상 &nbsp;/&nbsp; 녹화</p>
+        <h2 class="headline" id="video-title">자르고, 붙이고,<br>녹화까지.</h2>
+        <p class="lede"><span style="white-space:nowrap"><kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>`</kbd></span> 로 화면을 녹화하고, 필요한 부분만 남겨 MP4로.</p>
+      </div>
+      <div class="shot reveal"><img src="/img/video.png" width="1600" height="980" loading="lazy" alt="영상 자르기·붙이기 창. 재생 화면과 자를 위치 바, 오른쪽에 조각 목록과 MP4로 저장 버튼"></div>
+      <div class="facts reveal"><span>컴퓨터 소리 · 마이크</span><span>여러 영상 이어 붙이기</span><span>창 안의 ? 도움말</span></div>
+    </div>
+  </section>
+
+  <!-- 7. 나만의 메뉴 -->
+  <section class="chapter" aria-labelledby="mine-title">
+    <div class="wrap feature">
+      <div class="shot bare reveal"><img src="/img/menu-editor.png" width="1116" height="928" loading="lazy" alt="설정의 변환 메뉴 칸 편집기. 동그란 메뉴에서 칸을 끌어 자리를 바꾸고, 오른쪽 빼 둔 칸으로 끌어 빼낸다"></div>
+      <div class="txt reveal">
+        <p class="eyebrow">새로워졌어요</p>
+        <h2 class="headline" id="mine-title">메뉴는<br>내 손에 맞게.</h2>
+        <p class="lede">쓰지 않는 칸은 빼고, 자주 쓰는 칸은 원하는 자리로. 블랙 · 화이트 테마, 한국어 · English.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. 약속 -->
+  <section class="chapter" aria-labelledby="promise-title">
+    <div class="wrap">
+      <h2 class="headline center reveal" id="promise-title">걱정은 덜고.</h2>
+      <div class="promises reveal">
+        <div><strong>0원</strong><p>무료예요. 학교·회사 PC에서 써도 라이선스 걱정 없이.</p></div>
+        <div><strong>내 PC 안에서만</strong><p>파일을 인터넷에 올리지 않아요. 개인정보는 그대로 내 컴퓨터에.</p></div>
+        <div><strong>원본은 그대로</strong><p>언제나 원본 옆에 새 파일을 만들어요.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9. 설치 -->
+  <section class="chapter" id="install" aria-labelledby="install-title">
+    <div class="wrap center">
+      <h2 class="headline reveal" id="install-title">설치는 1분.</h2>
+      <ol class="steps reveal" style="text-align:left">
+        <li><strong>zip 압축 풀기</strong><p>받은 파일을 우클릭 → 압축 풀기.</p></li>
+        <li><strong>Plopp.exe 실행</strong><p>한국어 / ENGLISH를 고르고 [설치]. 관리자 권한은 필요 없어요.</p></li>
+        <li><strong>트레이에 퐁</strong><p>오른쪽 아래에 Plopp 아이콘이 보이면 끝.</p></li>
+      </ol>
+      <p class="needs reveal"><span>Windows 10/11</span><span>한글 변환: 한컴오피스 한글</span><span>Word·Excel·PPT 변환: MS Office</span></p>
+    </div>
+  </section>
+
+  <!-- 10. 업데이트(앱 '새 버전' 알림이 이곳으로 연결된다) -->
+  <section class="chapter" id="update" aria-labelledby="update-title">
+    <div class="wrap">
+      <div class="center reveal">
+        <p class="eyebrow">업데이트</p>
+        <h2 class="headline" id="update-title">덮어 설치하면&nbsp;<span class="accent">끝.</span></h2>
+        <p class="lede">지울 필요 없어요. 설정도 그대로예요.</p>
+      </div>
+      <div class="update reveal">
+        <ol>
+          <li><span><b>Windows용 다운로드</b>로 새 zip을 받아요. 가입·로그인 없이.</span></li>
+          <li><span><b>압축을 풀고</b> 폴더 안의 <b>Plopp.exe</b>를 실행해요.</span></li>
+          <li><span><b>[업데이트]</b>를 누르면 예전 앱은 알아서 닫히고 새 버전이 떠요.</span></li>
+        </ol>
+        <p class="edu" id="edu"><b>EDU_Converter를 쓰고 계셨나요?</b> 그대로 Plopp을 설치하면 돼요. 쓰던 설정은 이어지고, 예전 앱은 자동으로 정리돼요.
+          지금 버전은 트레이 아이콘 우클릭 → <b>정보</b>에서 볼 수 있어요.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11. 마지막 다운로드 -->
+  <section class="final" id="download" aria-labelledby="latest-name">
+    <div class="wrap">
+      <img class="reveal" src="/img/icon.png" width="96" height="96" alt="">
+      <h2 class="display reveal" id="latest-name" style="font-size:clamp(48px,8vw,104px)">Plopp</h2>
+      <p class="lede center reveal">끌다가 Q, 놓으면 퐁.<br>Windows 10/11 · zip 약 100MB · 무료</p>
+      <a class="btn reveal" href="/download"><svg aria-hidden="true" focusable="false"><use href="#win"/></svg>Windows용 다운로드</a>
+      <dl class="stats reveal" aria-live="polite">
         <div><dt>누적 다운로드</dt><dd id="st-release">–</dd></div>
         <div><dt>다운로드 버튼 클릭</dt><dd id="st-download">–</dd></div>
       </dl>
     </div>
-    <figure class="intro">
-      <video id="intro" src="/video/plopp-intro.mp4" poster="/video/plopp-intro.jpg" width="1280" height="720"
-             autoplay muted loop playsinline preload="auto" disablepictureinpicture disableremoteplayback
-             controlslist="nodownload noplaybackrate noremoteplayback"
-             aria-label="Plopp 소개 영상(19초): 파일을 끌다가 Q를 누르고 PDF 칸에 놓으면 변환된다. 용량 줄이기, PDF 쪽 편집, 영상 자르기, 화면 녹화, 블랙·화이트 테마까지"></video>
-      <button class="intro-btn" id="intro-sound" type="button" aria-pressed="false">소리 켜기</button>
-    </figure>
   </section>
+</main>
 
-  <section id="new">
-    <h2>무엇이 새로워졌나요</h2>
-    <p class="sub">이름만 바뀐 게 아니에요. 매일 쓰는 일을 더 많이 담았어요.</p>
-    <div class="bento">
-      <div class="card w3"><span class="tag">NEW</span><h3>화면 녹화</h3><p><span class="keys"><kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>`</kbd>로</span> 영역을 골라 바로 녹화. 컴퓨터 소리와 마이크도 함께 담고, 검은 막대의 [정지]로 끝내면 MP4로 저장돼요.</p></div>
-      <div class="card w3"><span class="tag">NEW</span><h3>영상 자르기·붙이기</h3><p>필요한 부분만 남기고 여러 영상을 이어 붙여 MP4로. 재생 위치 바와 [여기서 자르기] 버튼 하나면 충분해요.</p></div>
-      <div class="card w2"><span class="tag">NEW</span><h3>새 변환 메뉴</h3><p>칸에 닿으면 밝게 켜지고, <b>Size</b> 칸에 놓으면 가장 작게·균형·고화질 중에 골라요.</p></div>
-      <div class="card w2"><span class="tag">NEW</span><h3>블랙 · 화이트 테마</h3><p>설정에서 한 번에 바꿔요. 창과 변환 메뉴가 함께 바뀌어요.</p></div>
-      <div class="card w2"><span class="tag">NEW</span><h3>한국어 · English</h3><p>설치할 때 언어를 고르고, 나중에 설정에서 언제든 바꿀 수 있어요.</p></div>
-    </div>
-  </section>
+<footer>
+  <div class="wrap">
+    <span>만든 사람 이수훈 · <a href="mailto:akazhoon@gmail.com">akazhoon@gmail.com</a> · 불편한 점이나 바라는 기능은 메일로</span>
+    <span>© 2026 이수훈 · AGPL-3.0 무료 배포 · 예전 이름 EDU_Converter</span>
+  </div>
+</footer>
 
-  <section id="why">
-    <h2>왜 만들었나요</h2>
-    <p class="sub">파일 형식과 씨름하는 시간을, 정말 해야 할 일에 돌려드리고 싶었어요.</p>
-    <div class="steps">
-      <div class="card step"><h3>손짓 한 번으로</h3><p>PDF로 바꾸기, 첨부 용량 줄이기, 스캔 정리… 하루에도 몇 번씩 하는 일을 끌어다 놓기 한 번으로 줄여요.</p></div>
-      <div class="card step"><h3>내 파일은 내 PC 안에서</h3><p>인터넷 변환 사이트에 올리지 않아도 돼요. 모든 변환은 내 컴퓨터 안에서만 이루어져 개인정보를 지켜요.</p></div>
-      <div class="card step"><h3>누구나 쉽게</h3><p>메뉴를 찾을 필요 없이 끌어다 놓기만 하면 돼요. 컴퓨터가 낯선 분도, 매일 문서를 다루는 분도 똑같이.</p></div>
-    </div>
-  </section>
-
-  <section id="how">
-    <h2>쓰는 법은 딱 하나</h2>
-    <p class="sub">원본은 그대로, 원본 옆에 새 파일이 생겨요. 여러 파일도 한꺼번에.</p>
-    <div class="steps">
-      <div class="card step"><div class="num">1</div><h3>파일을 끌기 시작</h3><p>탐색기나 바탕화면에서 바꾸고 싶은 파일을 마우스로 끌어요.</p></div>
-      <div class="card step"><div class="num">2</div><h3>끄는 중에 <kbd>Q</kbd></h3><p>커서 주변에 동그란 메뉴가 펼쳐져요. 마우스는 놓지 마세요.</p></div>
-      <div class="card step"><div class="num">3</div><h3>원하는 칸에 놓기</h3><p>칸이 밝게 켜지면 놓아요. 퐁! 진행 상황은 오른쪽 아래에 보여요.</p></div>
-    </div>
-  </section>
-
-  <section>
-    <h2>이런 걸 할 수 있어요</h2>
-    <p class="sub">칸마다 넣을 수 있는 파일과 결과. <span class="dots">•••</span> 표시 칸은 놓은 뒤 한 번 더 골라요.</p>
-    <div class="card table">
-      <table>
-        <thead><tr><th>칸</th><th>넣을 수 있는 파일</th><th>결과</th></tr></thead>
-        <tbody>
-          <tr><td><span class="chip">PDF</span></td><td data-label="넣는 파일">이미지(여러 장은 한 파일로), 한글, Word, Excel, PPT</td><td data-label="결과">PDF</td></tr>
-          <tr><td><span class="chip">Image <span class="dots">•••</span></span></td><td data-label="넣는 파일">이미지, PDF, 한글, Office 문서</td><td data-label="결과">JPG·PNG·WEBP·BMP, 긴 이미지 한 장</td></tr>
-          <tr><td><span class="chip">HWP <span class="dots">•••</span></span></td><td data-label="넣는 파일">PDF, 한글, Word</td><td data-label="결과">HWP·HWPX</td></tr>
-          <tr><td><span class="chip">Word</span></td><td data-label="넣는 파일">PDF, 한글</td><td data-label="결과">DOCX</td></tr>
-          <tr><td><span class="chip">Excel</span></td><td data-label="넣는 파일">PDF, 한글, Word, PPT</td><td data-label="결과">XLSX (표를 찾아 시트로)</td></tr>
-          <tr><td><span class="chip">PPT</span></td><td data-label="넣는 파일">PDF, 한글, Word, Excel</td><td data-label="결과">PPTX (쪽마다 슬라이드)</td></tr>
-          <tr><td><span class="chip">Text <span class="dots">•••</span></span></td><td data-label="넣는 파일">PDF, 한글, Office 문서</td><td data-label="결과">TXT·HTML</td></tr>
-          <tr><td><span class="chip">Edit <span class="dots">•••</span></span></td><td data-label="넣는 파일">PDF, 영상</td><td data-label="결과">PDF 쪽 편집 창 · 영상 자르기·붙이기 창</td></tr>
-          <tr><td><span class="chip">Size <span class="dots">•••</span></span></td><td data-label="넣는 파일">이미지, PDF, 한글</td><td data-label="결과">같은 형식, 더 작은 파일 (가장 작게 · 균형 · 고화질)</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <section aria-labelledby="detail-title">
-    <h2 class="sr-only" id="detail-title">자세히 보기</h2>
-    <div class="feature">
-      <div class="txt">
-        <h3>화질은 지키고, 용량만 줄여요</h3>
-        <p><b>Size</b> 칸에 놓으면 가장 작게 · 균형 · 고화질 중에 골라요. 원본과 화질을 비교해서 기준을 넘을 때만 줄여요.</p>
-        <p>한글 문서는 글자·표·서식은 그대로 두고 <b>안에 든 그림만</b> 줄여요. 첨부 용량 제한 걱정 끝.</p>
-      </div>
-      <div class="shot plain"><img src="/img/size.png" width="760" height="1102" loading="lazy" alt="Size 칸에 놓으면 뜨는 선택 창: 가장 작게, 균형, 고화질"></div>
-    </div>
-    <div class="feature rev">
-      <div class="txt">
-        <h3>PDF 쪽 편집도 바로</h3>
-        <p>Edit 칸에 PDF를 놓으면 쪽을 끌어 순서를 바꾸고, 지우고, 돌릴 수 있어요. 실수해도 <span class="keys"><kbd>Ctrl</kbd>+<kbd>Z</kbd>.</span></p>
-        <p>저장은 항상 <b>새 파일</b>로. 원본은 안전해요.</p>
-      </div>
-      <div class="shot"><img src="/img/editor.png" width="1600" height="800" loading="lazy" alt="PDF 쪽 편집 창. 왼쪽에 쪽 목록, 오른쪽에 고른 쪽이 크게 보인다"></div>
-    </div>
-    <div class="feature">
-      <div class="txt">
-        <h3>영상은 자르고 붙여서 MP4로</h3>
-        <p>재생하다 자를 곳에서 <b>[여기서 자르기]</b>, 필요 없는 조각은 빼고, 여러 영상은 이어 붙여요.</p>
-        <p>녹화한 화면도, 휴대폰으로 찍은 영상도 그대로 넣으면 돼요.</p>
-      </div>
-      <div class="shot"><img src="/img/video.png" width="1600" height="980" loading="lazy" alt="영상 자르기·붙이기 창. 재생 화면과 자를 위치 바, 오른쪽에 조각 목록과 MP4로 저장 버튼"></div>
-    </div>
-    <div class="feature rev">
-      <div class="txt">
-        <h3>무엇을 할지 고르는 시작 창</h3>
-        <p>바탕화면 아이콘을 누르면 PDF 편집, 영상 자르기, 화면 녹화, 화면 캡처, 설정을 바로 열 수 있어요.</p>
-        <p><span class="keys"><kbd>Alt</kbd>+<kbd>`</kbd></span> 화면 캡처는 고르는 순간 클립보드로 복사돼요.</p>
-      </div>
-      <div class="shot"><img src="/img/home.png" width="1100" height="801" loading="lazy" alt="Plopp 시작 창. PDF 보기·편집, 영상 자르기·붙이기, 화면 녹화, 화면 캡처, 설정 버튼이 있다"></div>
-    </div>
-  </section>
-
-  <section>
-    <h2>설치 전에 확인해 주세요</h2>
-    <p class="sub">설치도 제거도 내 계정 안에서만, 관리자 권한 없이</p>
-    <div class="grid2">
-      <div class="card">
-        <h3>설치 방법</h3>
-        <ol>
-          <li>받은 <b>zip 파일의 압축을 풀어요.</b></li>
-          <li>폴더 안의 <b>Plopp.exe</b>를 실행하면 설치 창이 떠요.</li>
-          <li>맨 위에서 <b>한국어 / ENGLISH</b>를 고르고 [설치]를 눌러요.</li>
-          <li>오른쪽 아래 트레이에 검은 <b>Plopp</b> 아이콘이 생기면 준비 끝!</li>
-        </ol>
-      </div>
-      <div class="card">
-        <h3>필요한 것</h3>
-        <ul>
-          <li><b>Windows 10/11</b> (관리자 권한 필요 없음)</li>
-          <li>PDF·Word를 한글로 바꿀 때: <b>한컴오피스 한글</b></li>
-          <li>Word·Excel·PPT 관련 변환: <b>MS Office</b></li>
-          <li>열어 둔 한글·Office 창은 건드리지 않고, 직접 놓은 파일만 열어요.</li>
-          <li>관리자 권한 창 위에서는 Q가 안 돼요 → 트레이 아이콘 우클릭 → <b>변환 메뉴 열기 (고정)</b></li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <section id="update">
-    <h2>새 버전으로 업데이트하는 법</h2>
-    <p class="sub">앱에서 "새 버전" 알림을 누르셨다면 여기예요. 지울 필요 없이 덮어쓰면 끝, 설정도 그대로예요.</p>
-    <div class="card">
-      <ol>
-        <li>바로 아래 <b>Windows용 다운로드</b> 버튼을 눌러 새 zip을 받아요. (가입·로그인 필요 없어요)</li>
-        <li>받은 <b>zip 파일의 압축을 풀어요.</b> (파일 우클릭 → 압축 풀기)</li>
-        <li>폴더 안의 <b>Plopp.exe</b>를 실행하고 창에서 <b>[설치]</b> 또는 <b>[업데이트]</b>를 눌러요.</li>
-        <li>켜져 있던 예전 앱은 알아서 닫히고, 새 버전이 트레이에 다시 떠요. 끝!</li>
-      </ol>
-      <p class="note"><b>EDU_Converter를 쓰고 계셨나요?</b> 그대로 Plopp을 설치하면 돼요. 쓰던 설정은 이어지고, 예전 EDU_Converter는 자동으로 정리돼요.</p>
-      <p class="note" style="margin-top:8px">지금 쓰는 버전은 트레이 아이콘 우클릭 → <b>정보</b>에서 볼 수 있어요.</p>
-    </div>
-  </section>
-
-  <section id="download" class="download">
-    <div class="card">
-      <img src="/img/icon.png" width="256" height="256" alt="">
-      <h2 style="margin:0 0 6px;font-size:34px" id="latest-name">Plopp</h2>
-      <p style="color:var(--sub);margin:0 0 24px">Windows 10/11 · zip 약 100MB · 무료</p>
-      <div class="cta">
-        <a class="btn" href="/download"><svg aria-hidden="true" focusable="false"><use href="#win"/></svg>Windows용 다운로드</a>
-      </div>
-    </div>
-  </section>
-
-  </main>
-
-  <footer>
-    <span class="line">만든 사람 이수훈</span><span class="sep"> · </span><span class="line"><a href="mailto:akazhoon@gmail.com">akazhoon@gmail.com</a></span><br>
-    <span class="line">불편한 점이나 바라는 기능이 있으면 편하게 메일 주세요.</span><span class="sep"> · </span><span class="line">© 2026 이수훈 · AGPL-3.0 무료 배포</span><br>
-    <span class="line">Plopp의 예전 이름은 EDU_Converter예요.</span>
-  </footer>
-</div>
 <script>
-  // 소개 영상: 소리 없이 자동 반복. 버튼으로 소리를 켜고 끈다. 오른쪽 클릭 메뉴(저장)는 막는다
+  // 위 막대: 스크롤하면 아래 선
+  (() => {
+    const bar = document.getElementById("bar");
+    const onScroll = () => bar.classList.toggle("scrolled", scrollY > 8);
+    addEventListener("scroll", onScroll, { passive: true }); onScroll();
+  })();
+
+  // 스크롤 나타나기(움직임 줄이기 설정이면 CSS가 처음부터 완성된 모습으로 둔다)
+  (() => {
+    const els = document.querySelectorAll(".reveal");
+    if (!("IntersectionObserver" in window)) { document.documentElement.classList.add("js-off"); return; }
+    const io = new IntersectionObserver((entries) => entries.forEach((e) => {
+      if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+    }), { rootMargin: "0px 0px -6% 0px", threshold: .04 });
+    els.forEach((el) => io.observe(el));
+  })();
+
+  // 첫 화면의 변환 메뉴: 앱처럼 칸이 차례로 켜지고, 누르거나 올리면 그 칸이 하는 일을 보여 준다
+  (() => {
+    const INFO = {
+      pdf:   ["To PDF", "보고서.hwp", "이미지·한글·Office 문서를 PDF로"],
+      image: ["Image", "스캔.pdf", "JPG·PNG·WEBP·BMP, 긴 이미지 한 장으로"],
+      hwp:   ["HWP", "계획서.docx", "PDF·Word를 한글 문서(HWP·HWPX)로"],
+      word:  ["To Word", "공문.pdf", "PDF·한글을 DOCX로"],
+      excel: ["To Excel", "명단.pdf", "문서 속 표를 찾아 엑셀 시트로"],
+      ppt:   ["To PPT", "자료.pdf", "쪽마다 슬라이드 한 장으로"],
+      text:  ["Text", "안내문.hwp", "글자만(TXT) 또는 웹 문서(HTML)로"],
+      edit:  ["Edit", "수업.mp4", "PDF 쪽 편집 · 영상 자르기 창 열기"],
+      size:  ["Size", "사진.jpg", "화질은 지키고 용량만 줄이기(가장 작게 · 균형 · 고화질)"],
+    };
+    const dial = document.getElementById("dial");
+    const slots = [...dial.querySelectorAll(".slot")];
+    const beam = document.getElementById("beam"), ripple = document.getElementById("ripple");
+    const title = document.getElementById("hub-title"), sub = document.getElementById("hub-sub");
+    const caption = document.getElementById("dial-caption");
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let timer = null, order = ["pdf", "size", "hwp", "image", "excel", "edit"], i = 0;
+
+    function light(k, pop) {
+      const s = slots.find((x) => x.dataset.k === k);
+      slots.forEach((x) => x.classList.toggle("lit", x === s));
+      const a = getComputedStyle(s).getPropertyValue("--a").trim();
+      dial.style.setProperty("--la", a);
+      beam.style.setProperty("--la", a);
+      const [t, f, d] = INFO[k];
+      title.textContent = t; sub.textContent = f;
+      caption.innerHTML = "";
+      const b = document.createElement("b"); b.textContent = s.textContent.trim();
+      caption.append(b, ` — ${d}`);
+      if (pop && !reduce) {
+        const r = s.getBoundingClientRect(), o = dial.getBoundingClientRect();
+        ripple.style.left = `${r.left - o.left + r.width / 2}px`;
+        ripple.style.top = `${r.top - o.top + r.height / 2}px`;
+        ripple.classList.remove("go"); void ripple.offsetWidth; ripple.classList.add("go");
+      }
+    }
+    const tick = () => { light(order[i % order.length], true); i++; };
+    const start = () => { if (!reduce && !timer) timer = setInterval(tick, 2600); };
+    const stop = () => { clearInterval(timer); timer = null; };
+
+    slots.forEach((s) => {
+      s.addEventListener("mouseenter", () => { stop(); light(s.dataset.k, false); });
+      s.addEventListener("focus", () => { stop(); light(s.dataset.k, false); });
+      s.addEventListener("click", () => { stop(); light(s.dataset.k, true); });
+    });
+    dial.addEventListener("mouseleave", () => { i = order.indexOf(slots.find((x) => x.classList.contains("lit")).dataset.k) + 1; start(); });
+    light("pdf", false); i = 1;
+    // 화면에 보일 때만 돈다
+    new IntersectionObserver(([e]) => (e.isIntersecting ? start() : stop())).observe(dial);
+    document.addEventListener("visibilitychange", () => (document.hidden ? stop() : start()));
+  })();
+
+  // 소개 영상: 소리 없이 자동 반복, 버튼으로 소리 켜고 끄기. 오른쪽 클릭 메뉴(저장)는 막는다
   (() => {
     const v = document.getElementById("intro"), b = document.getElementById("intro-sound");
     v.addEventListener("contextmenu", (e) => e.preventDefault());
@@ -409,25 +580,27 @@
       b.setAttribute("aria-pressed", String(!v.muted));
     });
   })();
-  // 메인 집계: /api/stats (사이트 다운로드 버튼 클릭 + 릴리스 실제 다운로드 수)
+
+  // 집계: /api/stats (다운로드 버튼 클릭 + 릴리스 실제 다운로드 수)
   fetch("/api/stats").then((r) => r.ok ? r.json() : null).then((s) => {
     if (!s) return;
     const fmt = (n) => (typeof n === "number" ? n.toLocaleString("ko-KR") : "–");
     document.getElementById("st-release").textContent = fmt(s.releaseDownloads);
     document.getElementById("st-download").textContent = fmt(s.downloadClicks);
   }).catch(() => {});
-  // 최신 릴리스: 맨 위 "새 소식"(버전·바뀐 점·날짜)과 버전 표시. 릴리스만 올리면 페이지를 고치지 않아도 바뀐다
+
+  // 최신 릴리스: 맨 위 새 소식과 버전 표시(릴리스만 올리면 페이지를 고치지 않아도 바뀐다)
   // l.latest = 가장 최근 릴리스(사이트 표시용). l.version은 앱 알림용이라 알림을 켠 릴리스만 들어 있다
   fetch("/api/latest").then((r) => r.ok ? r.json() : null).then((resp) => {
     const l = resp && { ...resp, version: resp.latest || resp.version };
     if (!l || !/^\d+(\.\d+){0,3}$/.test(l.version)) return;
     const set = (id, text) => { document.getElementById(id).textContent = text; };  // textContent: 릴리스 글을 HTML로 넣지 않는다
     set("latest-name", `Plopp ${l.version}`);
-    set("meta-version", `버전 ${l.version}`);
-    set("news-version", `NEW ${l.version}`);
-    set("news-text", l.summary || "새 버전이 나왔어요. 업데이트 방법 보기");
+    set("meta-version", `버전 ${l.version} · 무료`);
+    set("news-version", `${l.version}`);
+    set("news-text", l.summary || "새 버전이 나왔어요");
     const d = /^(\d{4})-(\d{2})-(\d{2})$/.exec(l.date || "");
-    set("meta-date", d ? ` · ${Number(d[2])}월 ${Number(d[3])}일 업데이트` : "");
+    if (d) { set("meta-date", `${Number(d[2])}월 ${Number(d[3])}일 업데이트`); document.getElementById("meta-date").hidden = false; }
     document.getElementById("news").hidden = false;
   }).catch(() => {});
 </script>
