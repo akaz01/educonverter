@@ -82,7 +82,14 @@
     display: flex; flex-direction: column; justify-content: space-between; gap: 2px; }
   .stats dt { font-size: 13px; color: var(--sub); line-height: 1.35; }
   .stats dd { margin: 0; font-size: 26px; font-weight: 900; font-variant-numeric: tabular-nums; }
-  .hero-img { filter: drop-shadow(0 30px 60px rgba(0, 0, 0, .6)); }
+  .intro { position: relative; margin: 0; border-radius: 20px; overflow: hidden; border: 1px solid var(--line);
+    background: var(--card); box-shadow: 0 30px 60px rgba(0, 0, 0, .6); aspect-ratio: 16 / 9; }
+  .intro video { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .intro-btn { position: absolute; right: 12px; bottom: 12px; min-height: 40px; padding: 0 14px; border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, .25); background: rgba(10, 10, 10, .72); color: #fff;
+    font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; }
+  .intro-btn:hover { background: rgba(10, 10, 10, .9); }
+  .intro-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
   section { padding: 64px 0; }
   section > h2 { font-size: clamp(30px, 4vw, 44px); margin: 0 0 10px; letter-spacing: -1px; font-weight: 900; }
@@ -148,7 +155,7 @@
     .bento .w3, .bento .w2 { grid-column: auto; }
     .bento .card:last-child { grid-column: 1 / -1; }
     .hero { padding: 10px 0 24px; gap: 28px; }
-    .hero-img { width: 100%; max-width: 440px; justify-self: center; }
+    .intro { width: 100%; max-width: 640px; justify-self: center; }
     section { padding: 48px 0; }
     section > p.sub { margin-bottom: 26px; }
   }
@@ -231,8 +238,13 @@
         <div><dt>다운로드 버튼 클릭</dt><dd id="st-download">–</dd></div>
       </dl>
     </div>
-    <img class="hero-img" src="/img/menu.png" width="760" height="760" fetchpriority="high"
-         alt="파일을 끌다가 Q를 누르면 펼쳐지는 동그란 변환 메뉴. PDF 칸 위로 끌고 오면 칸이 밝게 켜진다">
+    <figure class="intro">
+      <video id="intro" src="/video/plopp-intro.mp4" poster="/video/plopp-intro.jpg" width="1280" height="720"
+             autoplay muted loop playsinline preload="auto" disablepictureinpicture disableremoteplayback
+             controlslist="nodownload noplaybackrate noremoteplayback"
+             aria-label="Plopp 소개 영상(19초): 파일을 끌다가 Q를 누르고 PDF 칸에 놓으면 변환된다. 용량 줄이기, PDF 쪽 편집, 영상 자르기, 화면 녹화, 블랙·화이트 테마까지"></video>
+      <button class="intro-btn" id="intro-sound" type="button" aria-pressed="false">소리 켜기</button>
+    </figure>
   </section>
 
   <section id="new">
@@ -385,6 +397,18 @@
   </footer>
 </div>
 <script>
+  // 소개 영상: 소리 없이 자동 반복. 버튼으로 소리를 켜고 끈다. 오른쪽 클릭 메뉴(저장)는 막는다
+  (() => {
+    const v = document.getElementById("intro"), b = document.getElementById("intro-sound");
+    v.addEventListener("contextmenu", (e) => e.preventDefault());
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) { v.removeAttribute("autoplay"); v.pause(); }
+    b.addEventListener("click", () => {
+      v.muted = !v.muted;
+      if (v.paused) v.play().catch(() => {});
+      b.textContent = v.muted ? "소리 켜기" : "소리 끄기";
+      b.setAttribute("aria-pressed", String(!v.muted));
+    });
+  })();
   // 메인 집계: /api/stats (사이트 다운로드 버튼 클릭 + 릴리스 실제 다운로드 수)
   fetch("/api/stats").then((r) => r.ok ? r.json() : null).then((s) => {
     if (!s) return;
